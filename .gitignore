@@ -1,3 +1,7 @@
+results
+.idea
+data/HEPAC-6_RNF19A_ORF1_2000-frames.nc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
