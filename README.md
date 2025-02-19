@@ -57,42 +57,40 @@ mpirun -np 4 python ./trajectories_neighbors.py --out results/test --sample test
 
 The script outputs is a CSV file of the validated contacts:
 
-| neighbors           | residue 1 position | residue 1 | atom 1 | residue 2 position | residue 2 | atom 2 | proportion frames (%) |
-|---------------------|--------------------|-----------|--------|--------------------|-----------|--------|-----------------------|
-| PRO7_N-ALA6_N       | 7                  | PRO       | N      | 6                  | ALA       | N      | 80.0                  |
-| PRO7_N-ALA6_H       | 7                  | PRO       | N      | 6                  | ALA       | H      | 53.3                  |
-| PRO7_N-ALA6_CA      | 7                  | PRO       | N      | 6                  | ALA       | CA     | 100.0                 |
-| PRO7_N-ALA6_C       | 7                  | PRO       | N      | 6                  | ALA       | C      | 100.0                 |
-| PRO7_N-ALA6_O       | 7                  | PRO       | N      | 6                  | ALA       | O      | 100.0                 |
-| PRO7_CD-ALA6_CA     | 7                  | PRO       | CD     | 6                  | ALA       | CA     | 100.0                 |
-| PRO7_CD-ALA6_HA     | 7                  | PRO       | CD     | 6                  | ALA       | HA     | 100.0                 |
-| PRO7_CD-ALA6_C      | 7                  | PRO       | CD     | 6                  | ALA       | C      | 100.0                 |
-| PRO7_CD-ALA6_O      | 7                  | PRO       | CD     | 6                  | ALA       | O      | 100.0                 |
-| PRO7_HD2-ALA6_CA    | 7                  | PRO       | HD2    | 6                  | ALA       | CA     | 66.7                  |
-| PRO7_HD2-ALA6_HA    | 7                  | PRO       | HD2    | 6                  | ALA       | HA     | 100.0                 |
-| PRO7_HD2-ALA6_C     | 7                  | PRO       | HD2    | 6                  | ALA       | C      | 100.0                 |
-| PRO7_HD3-ALA6_CA    | 7                  | PRO       | HD3    | 6                  | ALA       | CA     | 60.0                  |
-| PRO7_HD3-ALA6_HA    | 7                  | PRO       | HD3    | 6                  | ALA       | HA     | 100.0                 |
-| PRO7_HD3-ALA6_HB1   | 7                  | PRO       | HD3    | 6                  | ALA       | HB1    | 60.0                  |
-| PRO7_HD3-ALA6_C     | 7                  | PRO       | HD3    | 6                  | ALA       | C      | 100.0                 |
-| PRO7_CG-ALA6_HA     | 7                  | PRO       | CG     | 6                  | ALA       | HA     | 100.0                 |
-| PRO7_CG-ALA6_C      | 7                  | PRO       | CG     | 6                  | ALA       | C      | 86.7                  |
-| PRO7_HA-ALA6_C      | 7                  | PRO       | HA     | 6                  | ALA       | C      | 100.0                 |
-| PRO7_HA-ALA6_O      | 7                  | PRO       | HA     | 6                  | ALA       | O      | 93.3                  |
-| PRO7_C-ALA6_C       | 7                  | PRO       | C      | 6                  | ALA       | C      | 100.0                 |
-| PRO7_C-ALA6_O       | 7                  | PRO       | C      | 6                  | ALA       | O      | 93.3                  |
-| ALA12_HA-PRO13_N    | 12                 | ALA       | HA     | 13                 | PRO       | N      | 100.0                 |
-| ALA12_HA-PRO13_CD   | 12                 | ALA       | HA     | 13                 | PRO       | CD     | 53.3                  |
-| ALA12_HA-PRO13_HD2  | 12                 | ALA       | HA     | 13                 | PRO       | HD2    | 60.0                  |
-| ALA12_HA-PRO13_HD3  | 12                 | ALA       | HA     | 13                 | PRO       | HD3    | 53.3                  |
-| ALA12_CB-PRO13_N    | 12                 | ALA       | CB     | 13                 | PRO       | N      | 100.0                 |
-| ALA12_CB-PRO13_CD   | 12                 | ALA       | CB     | 13                 | PRO       | CD     | 100.0                 |
-| ALA12_CB-PRO13_HD2  | 12                 | ALA       | CB     | 13                 | PRO       | HD2    | 86.7                  |
-| ALA12_CB-PRO13_HD3  | 12                 | ALA       | CB     | 13                 | PRO       | HD3    | 100.0                 |
-| ALA12_HB2-PRO13_HD2 | 12                 | ALA       | HB2    | 13                 | PRO       | HD2    | 93.3                  |
-| ALA12_O-PRO13_N     | 12                 | ALA       | O      | 13                 | PRO       | N      | 100.0                 |
-| ALA12_O-PRO13_CD    | 12                 | ALA       | O      | 13                 | PRO       | CD     | 100.0                 |
-| ALA12_O-PRO13_HD2   | 12                 | ALA       | O      | 13                 | PRO       | HD2    | 86.7                  |
-| ALA12_O-PRO13_HD3   | 12                 | ALA       | O      | 13                 | PRO       | HD3    | 93.3                  |
-| ALA12_O-PRO13_CA    | 12                 | ALA       | O      | 13                 | PRO       | CA     | 100.0                 |
-| ALA12_O-PRO13_HA    | 12                 | ALA       | O      | 13                 | PRO       | HA     | 100.0                 |
+|neighbors          |residue 1 position|residue 1|atom 1|residue 2 position|residue 2|atom 2|frames with contact|total frames|proportion frames (%)|
+|-------------------|------------------|---------|------|------------------|---------|------|-------------------|------------|---------------------|
+|PRO7_N-ALA6_N      |7                 |PRO      |N     |6                 |ALA      |N     |17                 |20          |85.0                 |
+|PRO7_N-ALA6_CA     |7                 |PRO      |N     |6                 |ALA      |CA    |20                 |20          |100.0                |
+|PRO7_N-ALA6_C      |7                 |PRO      |N     |6                 |ALA      |C     |20                 |20          |100.0                |
+|PRO7_N-ALA6_O      |7                 |PRO      |N     |6                 |ALA      |O     |20                 |20          |100.0                |
+|PRO7_CD-ALA6_CA    |7                 |PRO      |CD    |6                 |ALA      |CA    |20                 |20          |100.0                |
+|PRO7_CD-ALA6_HA    |7                 |PRO      |CD    |6                 |ALA      |HA    |20                 |20          |100.0                |
+|PRO7_CD-ALA6_C     |7                 |PRO      |CD    |6                 |ALA      |C     |20                 |20          |100.0                |
+|PRO7_CD-ALA6_O     |7                 |PRO      |CD    |6                 |ALA      |O     |20                 |20          |100.0                |
+|PRO7_HD2-ALA6_CA   |7                 |PRO      |HD2   |6                 |ALA      |CA    |14                 |20          |70.0                 |
+|PRO7_HD2-ALA6_HA   |7                 |PRO      |HD2   |6                 |ALA      |HA    |20                 |20          |100.0                |
+|PRO7_HD2-ALA6_C    |7                 |PRO      |HD2   |6                 |ALA      |C     |20                 |20          |100.0                |
+|PRO7_HD3-ALA6_CA   |7                 |PRO      |HD3   |6                 |ALA      |CA    |11                 |20          |55.0                 |
+|PRO7_HD3-ALA6_HA   |7                 |PRO      |HD3   |6                 |ALA      |HA    |19                 |20          |95.0                 |
+|PRO7_HD3-ALA6_HB1  |7                 |PRO      |HD3   |6                 |ALA      |HB1   |11                 |20          |55.0                 |
+|PRO7_HD3-ALA6_C    |7                 |PRO      |HD3   |6                 |ALA      |C     |19                 |20          |95.0                 |
+|PRO7_CG-ALA6_HA    |7                 |PRO      |CG    |6                 |ALA      |HA    |20                 |20          |100.0                |
+|PRO7_CG-ALA6_C     |7                 |PRO      |CG    |6                 |ALA      |C     |18                 |20          |90.0                 |
+|PRO7_HA-ALA6_C     |7                 |PRO      |HA    |6                 |ALA      |C     |20                 |20          |100.0                |
+|PRO7_HA-ALA6_O     |7                 |PRO      |HA    |6                 |ALA      |O     |19                 |20          |95.0                 |
+|PRO7_C-ALA6_C      |7                 |PRO      |C     |6                 |ALA      |C     |20                 |20          |100.0                |
+|PRO7_C-ALA6_O      |7                 |PRO      |C     |6                 |ALA      |O     |19                 |20          |95.0                 |
+|ALA12_HA-PRO13_N   |12                |ALA      |HA    |13                |PRO      |N     |20                 |20          |100.0                |
+|ALA12_HA-PRO13_CD  |12                |ALA      |HA    |13                |PRO      |CD    |10                 |20          |50.0                 |
+|ALA12_HA-PRO13_HD3 |12                |ALA      |HA    |13                |PRO      |HD3   |13                 |20          |65.0                 |
+|ALA12_CB-PRO13_N   |12                |ALA      |CB    |13                |PRO      |N     |20                 |20          |100.0                |
+|ALA12_CB-PRO13_CD  |12                |ALA      |CB    |13                |PRO      |CD    |20                 |20          |100.0                |
+|ALA12_CB-PRO13_HD2 |12                |ALA      |CB    |13                |PRO      |HD2   |17                 |20          |85.0                 |
+|ALA12_CB-PRO13_HD3 |12                |ALA      |CB    |13                |PRO      |HD3   |20                 |20          |100.0                |
+|ALA12_HB2-PRO13_HD2|12                |ALA      |HB2   |13                |PRO      |HD2   |16                 |20          |80.0                 |
+|ALA12_O-PRO13_N    |12                |ALA      |O     |13                |PRO      |N     |20                 |20          |100.0                |
+|ALA12_O-PRO13_CD   |12                |ALA      |O     |13                |PRO      |CD    |20                 |20          |100.0                |
+|ALA12_O-PRO13_HD2  |12                |ALA      |O     |13                |PRO      |HD2   |16                 |20          |80.0                 |
+|ALA12_O-PRO13_HD3  |12                |ALA      |O     |13                |PRO      |HD3   |19                 |20          |95.0                 |
+|ALA12_O-PRO13_CA   |12                |ALA      |O     |13                |PRO      |CA    |20                 |20          |100.0                |
+|ALA12_O-PRO13_HA   |12                |ALA      |O     |13                |PRO      |HA    |20                 |20          |100.0                |

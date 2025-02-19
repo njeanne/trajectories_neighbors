@@ -270,7 +270,6 @@ def load_trajectory(trajectory_file, topology_file, frames_sel):
     """
     if comm.rank == 0:
         logging.info(f"\tLoading trajectory file, please be patient..")
-    traj = None
     try:
         if trajectory_file in frames_sel:
             traj = pt.iterload(trajectory_file, top=topology_file,
@@ -406,7 +405,7 @@ def get_neighbors_out_of_roi(data, atoms_neighbors, roi, padding, traj):
     """
     Get only the region of interest neighbors out of this region of interest.
 
-    :param data: the neighbors' data.
+    :param data: the trajectories' data.
     :type data: dict
     :param atoms_neighbors: the neighbors' atoms.
     :type atoms_neighbors: dict
@@ -416,8 +415,11 @@ def get_neighbors_out_of_roi(data, atoms_neighbors, roi, padding, traj):
     :type padding: int
     :param traj: the trajectory.
     :type traj: pytraj.Trajectory
-    :return:
+    :return: the updated trajectories' data.
+    :rtype: dict
     """
+    nb_neighbors_in_traj = 0
+    nb_new_neighbors = 0
     for roi_atom_idx in atoms_neighbors:
         idx_residue1 = traj.topology.atom(roi_atom_idx).resid
         residue1 = traj.topology.residue(idx_residue1).name
@@ -428,18 +430,66 @@ def get_neighbors_out_of_roi(data, atoms_neighbors, roi, padding, traj):
             residue2 = traj.topology.residue(idx_residue2).name
             atom2 = traj.topology.atom(neighbor_atom_idx).name
             if idx_residue2 not in range(roi[0] - 1 - padding, roi[1] + padding):
-                data["neighbors"].append(f"{residue1}{idx_residue1 + 1}_{atom1}-{residue2}{idx_residue2 + 1}_{atom2}")
-                data["residue 1 position"].append(idx_residue1 + 1)
-                data["residue 1"].append(residue1)
-                data["atom 1"].append(atom1)
-                data["residue 2 position"].append(idx_residue2 + 1)
-                data["residue 2"].append(residue2)
-                data["atom 2"].append(atom2)
-                data["proportion frames (%)"].append(
-                    round(atoms_neighbors[roi_atom_idx][neighbor_atom_idx] / traj.n_frames * 100, 1))
+                neighbors_id = f"{residue1}{idx_residue1 + 1}_{atom1}-{residue2}{idx_residue2 + 1}_{atom2}"
+                if neighbors_id not in data["neighbors"]:
+                    data["neighbors"][neighbors_id] = {
+                        "residue 1 position": idx_residue1 + 1,
+                        "residue 1": residue1,
+                        "atom 1": atom1,
+                        "residue 2 position": idx_residue2 + 1,
+                        "residue 2": residue2,
+                        "atom 2": atom2,
+                        "frames with contact": atoms_neighbors[roi_atom_idx][neighbor_atom_idx]
+                    }
+                    nb_new_neighbors += 1
+                else:
+                    data["neighbors"][neighbors_id]["frames with contact"] += atoms_neighbors[roi_atom_idx][
+                        neighbor_atom_idx]
+                nb_neighbors_in_traj += 1
+    logging.info(f"\t\tAtoms neighbor{'s' if nb_neighbors_in_traj > 1 else ''} found in the trajectory:"
+                 f"{nb_neighbors_in_traj:>19}")
+    logging.info(f"\t\tAtoms new neighbor{'s' if nb_new_neighbors > 1 else ''} found :{nb_new_neighbors:>32}")
+    logging.info(f"\t\tAtoms neighbor{'s' if len(data['neighbors']) > 1 else ''} found in all the processed "
+                 f"trajectories: {len(data['neighbors'])}")
+    return data
 
-    pd.set_option('display.max_rows', None)
-    return pd.DataFrame.from_dict(data)
+
+def neighbors_to_csv(data, out_dir, smp):
+    """
+    Save the neighbors' results to CSV.
+
+    :param data: the trajectories' data.
+    :type data: dict
+    :param out_dir: the directory output path.
+    :type out_dir: str
+    :param smp: the sample name.
+    :type smp: str
+    :return: the dataframe of the hbonds' statistics.
+    :rtype: pandas.DataFrame
+    """
+    data_neighbors = {"neighbors": [], "residue 1 position": [], "residue 1": [], "atom 1": [], 
+                      "residue 2 position": [], "residue 2": [], "atom 2": [], "frames with contact": [],
+                      "total frames": [], "proportion frames (%)": []}
+
+    for neighbors_id in data["neighbors"]:
+        data_neighbors["neighbors"].append(neighbors_id)
+        data_neighbors["residue 1 position"].append(data["neighbors"][neighbors_id]["residue 1 position"])
+        data_neighbors["residue 1"].append(data["neighbors"][neighbors_id]["residue 1"])
+        data_neighbors["atom 1"].append(data["neighbors"][neighbors_id]["atom 1"])
+        data_neighbors["residue 2 position"].append(data["neighbors"][neighbors_id]["residue 2 position"])
+        data_neighbors["residue 2"].append(data["neighbors"][neighbors_id]["residue 2"])
+        data_neighbors["atom 2"].append(data["neighbors"][neighbors_id]["atom 2"])
+        data_neighbors["frames with contact"].append(data["neighbors"][neighbors_id]["frames with contact"])
+        data_neighbors["total frames"].append(data["frames"])
+        data_neighbors["proportion frames (%)"].append(
+            round(data["neighbors"][neighbors_id]["frames with contact"] / data["frames"] * 100, 1))
+
+    df = pd.DataFrame(data_neighbors)
+    out_path = os.path.join(out_dir, f"{smp.replace(' ', '_')}_neighbors.csv")
+    df.to_csv(out_path, index=False)
+    if comm.rank == 0:
+        logging.info(f"Neighbors CSV file saved: {os.path.abspath(out_path)}")
+    return df
 
 
 def record_analysis(data, out_dir, current_trajectory_file, smp):
@@ -564,30 +614,28 @@ if __name__ == "__main__":
         logging.error(ex, exc_info=True)
         sys.exit(1)
 
-    data_traj = None
-    traj_files = None
     try:
-        data_traj, skipped_traj = resume_or_initialize_analysis(args.inputs, args.topology, args.sample,
-                                                                args.distance_contacts, args.proportion_contacts,
-                                                                args.nanoseconds, args.resume, frames_selection)
-        traj_files = remove_processed_trajectories(args.inputs, skipped_traj, args.resume)
+        data_trajectories, skipped_traj = resume_or_initialize_analysis(args.inputs, args.topology, args.sample,
+                                                                        args.distance_contacts,
+                                                                        args.proportion_contacts,
+                                                                        args.nanoseconds, args.resume, frames_selection)
+        trajectory_files = remove_processed_trajectories(args.inputs, skipped_traj, args.resume)
     except KeyError as exc:
         logging.error(exc, exc_info=True)
         sys.exit(1)
 
     trajectory = None
-    neighbors = {"neighbors": [], "residue 1 position": [], "residue 1": [], "atom 1": [], "residue 2 position": [],
-                 "residue 2": [], "atom 2": [], "proportion frames (%)": []}
-    for traj_file in traj_files:
+    for trajectory_file in trajectory_files:
         # load the trajectory
         if comm.rank == 0:
-            logging.info(f"Processing trajectory file: {traj_file}")
+            logging.info(f"Processing trajectory file: {trajectory_file}")
         try:
-            trajectory = load_trajectory(traj_file, args.topology, frames_selection)
-            data_traj = check_trajectories_consistency(trajectory, traj_file, data_traj, frames_selection)
+            trajectory = load_trajectory(trajectory_file, args.topology, frames_selection)
+            data_trajectories = check_trajectories_consistency(trajectory, trajectory_file, data_trajectories,
+                                                               frames_selection)
         except RuntimeError as exc:
-            logging.error(f"Check if the topology ({args.topology}) and/or the trajectory ({', '.join(args.inputs)}) "
-                          f"files exists", exc_info=True)
+            logging.error(f"Check if the topology ({args.topology}) and/or the trajectory "
+                          f"({', '.join(args.inputs)}) files exists", exc_info=True)
             sys.exit(1)
         except ValueError as exc:
             logging.error(exc, exc_info=True)
@@ -603,19 +651,17 @@ if __name__ == "__main__":
         atoms_indices_in_roi = get_roi_atoms_indices(trajectory, args.roi)
         atoms_neighbors_with_roi_atoms = search_neighbors(atoms_indices_in_roi, trajectory, args.distance_contacts,
                                                           args.proportion_contacts)
-        neighbors = get_neighbors_out_of_roi(neighbors, atoms_neighbors_with_roi_atoms, args.roi, args.padding, trajectory)
-        logging.info(f"\t\tAtoms neighbor{'s' if len(neighbors) > 1 else ''} found:{len(neighbors):>15}")
+        data_trajectories = get_neighbors_out_of_roi(data_trajectories, atoms_neighbors_with_roi_atoms, args.roi,
+                                                     args.padding, trajectory)
+        neighbors = neighbors_to_csv(data_trajectories, args.out, args.sample)
 
         # pickle the analysis
-        record_analysis(data_traj, args.out, traj_file, args.sample)
+        record_analysis(data_trajectories, args.out, trajectory_file, args.sample)
 
     if comm.rank == 0:
-        logging.info(f"{len(data_traj['trajectory files processed'])} processed trajectory files: "
-                     f"{', '.join(data_traj['trajectory files processed'])}")
-        logging.info(f"Whole trajectories memory size: {round(data_traj['size Gb'], 6):>17} Gb")
-        logging.info(f"Whole trajectories frames: {data_traj['frames']:>16}")
+        logging.info(f"{len(data_trajectories['trajectory files processed'])} processed trajectory files: "
+                     f"{', '.join(data_trajectories['trajectory files processed'])}")
+        logging.info(f"Whole trajectories memory size: {round(data_trajectories['size Gb'], 6):>12} Gb")
+        logging.info(f"Whole trajectories frames: {data_trajectories['frames']:>11}")
         logging.info(f"Whole trajectories neighbors found: {len(neighbors)}")
-        out_path = os.path.join(args.out, f"neighbors_{args.sample.replace(' ', '_')}.csv")
-        neighbors.to_csv(out_path, index=False)
-        logging.info(f"Neighbors result file: {os.path.abspath(out_path)}")
 
