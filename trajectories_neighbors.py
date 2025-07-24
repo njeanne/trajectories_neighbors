@@ -7,7 +7,7 @@ Created on 12 Feb. 2025
 __author__ = "Nicolas JEANNE"
 __copyright__ = "GNU General Public License"
 __email__ = "jeanne.n@chu-toulouse.fr"
-__version__ = "1.1.0"
+__version__ = "1.0.0"
 
 import argparse
 import logging
@@ -207,7 +207,7 @@ def resume_or_initialize_analysis(trajectory_files, topology_file, smp, distance
         # load the neighbors from the pickle file
         try:
             with open(data["pickle neighbors"], "rb") as file_handler:
-                data["contact"] = pickle.load(file_handler)
+                data["neighbors"] = pickle.load(file_handler)
         except FileNotFoundError as fnf_ex:
             logging.error(fnf_ex, exc_info=True)
             sys.exit(1)
@@ -226,8 +226,8 @@ def resume_or_initialize_analysis(trajectory_files, topology_file, smp, distance
     # set the simulation time
     data["parameters"]["time"] = f"{sim_time} ns"
     # add a neighbors section if necessary
-    if "contact" not in data:
-        data["contact"] = {}
+    if "neighbors" not in data:
+        data["neighbors"] = {}
     return data, trajectory_files_to_skip
 
 
@@ -431,8 +431,8 @@ def get_neighbors_out_of_roi(data, atoms_neighbors, roi, padding, traj):
             atom2 = traj.topology.atom(neighbor_atom_idx).name
             if idx_residue2 not in range(roi[0] - 1 - padding, roi[1] + padding):
                 neighbors_id = f"{residue1}{idx_residue1 + 1}_{atom1}-{residue2}{idx_residue2 + 1}_{atom2}"
-                if neighbors_id not in data["contact"]:
-                    data["contact"][neighbors_id] = {
+                if neighbors_id not in data["neighbors"]:
+                    data["neighbors"][neighbors_id] = {
                         "residue 1 position": idx_residue1 + 1,
                         "residue 1": residue1,
                         "atom 1": atom1,
@@ -443,7 +443,7 @@ def get_neighbors_out_of_roi(data, atoms_neighbors, roi, padding, traj):
                     }
                     nb_new_neighbors += 1
                 else:
-                    data["contact"][neighbors_id]["frames with contact"] += atoms_neighbors[roi_atom_idx][
+                    data["neighbors"][neighbors_id]["frames with contact"] += atoms_neighbors[roi_atom_idx][
                         neighbor_atom_idx]
                 nb_neighbors_in_traj += 1
     logging.info(f"\t\tAtoms neighbor{'s' if nb_neighbors_in_traj > 1 else ''} found in the trajectory:"
@@ -467,22 +467,22 @@ def neighbors_to_csv(data, out_dir, smp):
     :return: the dataframe of the hbonds' statistics.
     :rtype: pandas.DataFrame
     """
-    data_neighbors = {"contact": [], "residue 1 position": [], "residue 1": [], "atom 1": [],
+    data_neighbors = {"neighbors": [], "residue 1 position": [], "residue 1": [], "atom 1": [],
                       "residue 2 position": [], "residue 2": [], "atom 2": [], "frames with contact": [],
                       "total frames": [], "proportion frames (%)": []}
 
-    for neighbors_id in data["contact"]:
-        data_neighbors["contact"].append(neighbors_id)
-        data_neighbors["residue 1 position"].append(data["contact"][neighbors_id]["residue 1 position"])
-        data_neighbors["residue 1"].append(data["contact"][neighbors_id]["residue 1"])
-        data_neighbors["atom 1"].append(data["contact"][neighbors_id]["atom 1"])
-        data_neighbors["residue 2 position"].append(data["contact"][neighbors_id]["residue 2 position"])
-        data_neighbors["residue 2"].append(data["contact"][neighbors_id]["residue 2"])
-        data_neighbors["atom 2"].append(data["contact"][neighbors_id]["atom 2"])
-        data_neighbors["frames with contact"].append(data["contact"][neighbors_id]["frames with contact"])
+    for neighbors_id in data["neighbors"]:
+        data_neighbors["neighbors"].append(neighbors_id)
+        data_neighbors["residue 1 position"].append(data["neighbors"][neighbors_id]["residue 1 position"])
+        data_neighbors["residue 1"].append(data["neighbors"][neighbors_id]["residue 1"])
+        data_neighbors["atom 1"].append(data["neighbors"][neighbors_id]["atom 1"])
+        data_neighbors["residue 2 position"].append(data["neighbors"][neighbors_id]["residue 2 position"])
+        data_neighbors["residue 2"].append(data["neighbors"][neighbors_id]["residue 2"])
+        data_neighbors["atom 2"].append(data["neighbors"][neighbors_id]["atom 2"])
+        data_neighbors["frames with contact"].append(data["neighbors"][neighbors_id]["frames with contact"])
         data_neighbors["total frames"].append(data["frames"])
         data_neighbors["proportion frames (%)"].append(
-            round(data["contact"][neighbors_id]["frames with contact"] / data["frames"] * 100, 1))
+            round(data["neighbors"][neighbors_id]["frames with contact"] / data["frames"] * 100, 1))
 
     df = pd.DataFrame(data_neighbors)
     out_path = os.path.join(out_dir, f"{smp.replace(' ', '_')}_neighbors.csv")
@@ -513,7 +513,7 @@ def record_analysis(data, out_dir, current_trajectory_file, smp):
 
     # extract the neighbors from the data and pickle them
     out_pickle = os.path.join(out_dir, f"{smp.replace(' ', '_')}_analysis.pkl")
-    neighbors_analysis_data = data.pop("contact")
+    neighbors_analysis_data = data.pop("neighbors")
     with open(out_pickle, "wb") as file_handler:
         pickle.dump(neighbors_analysis_data, file_handler)
     if comm.rank == 0:
@@ -528,7 +528,7 @@ def record_analysis(data, out_dir, current_trajectory_file, smp):
         logging.info(f"\t\tAnalysis parameters saved: {os.path.abspath(out_yaml)}")
 
     # add the extracted neighbors to the data again
-    data["contact"] = neighbors_analysis_data
+    data["neighbors"] = neighbors_analysis_data
     return data
 
 
